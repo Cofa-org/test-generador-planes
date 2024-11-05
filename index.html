@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Planes de Financiamiento</title>
+</head>
+<body>
+    <h1>Configuración de Parámetros</h1>
+    <form id="configForm">
+        <label for="remuneracionMinima">Remuneración Mínima:</label>
+        <input type="number" id="remuneracionMinima" value="20000"><br>
+
+        <label for="remuneracionMaxima">Remuneración Máxima:</label>
+        <input type="number" id="remuneracionMaxima" value="100000"><br>
+
+        <label for="toleranciaMinima">Tolerancia Mínima (%):</label>
+        <input type="number" id="toleranciaMinima" value="5"><br>
+
+        <label for="toleranciaMaxima">Tolerancia Máxima (%):</label>
+        <input type="number" id="toleranciaMaxima" value="20"><br>
+
+        <label for="interesMinimo">Interés Anual Mínimo:</label>
+        <input type="number" id="interesMinimo" value="400"><br>
+
+        <label for="interesMaximo">Interés Anual Máximo:</label>
+        <input type="number" id="interesMaximo" value="520"><br>
+
+        <label for="cantidadCuotasMinimas">Cantidad de Cuotas Mínimas:</label>
+        <input type="number" id="cantidadCuotasMinimas" value="2"><br>
+
+        <label for="cantidadCuotasMaximas">Cantidad de Cuotas Máximas:</label>
+        <input type="number" id="cantidadCuotasMaximas" value="6"><br>
+
+        <button type="button" onclick="guardarConfiguracion()">Guardar Configuración</button>
+    </form>
+
+    <h1>Calculadora de Planes</h1>
+    <form id="calculoForm">
+        <label for="remuneracion">Remuneración bruta:</label>
+        <input type="number" id="remuneracion" required><br>
+
+        <label for="montoSolicitado">Monto Solicitado:</label>
+        <input type="number" id="montoSolicitado" required><br>
+
+        <label for="scoringTotal">Scoring Total:</label>
+        <input type="number" id="scoringTotal" value="10"><br>
+
+        <button type="button" onclick="calcularPlanes()">Calcular Planes</button>
+    </form>
+
+    <h2>Planes de Financiamiento Generados</h2>
+    <div id="planesResultado"></div>
+
+    <script>
+        const configuracion = {
+            remuneracionMinima: 700000,
+            remuneracionMaxima: 2000000,
+            toleranciaMinima: 10,
+            toleranciaMaxima: 30,
+            interesMinimo: 400,
+            interesMaximo: 520,
+            cantidadCuotasMinimas: 2,
+            cantidadCuotasMaximas: 6,
+            capitalMaximo: 300000
+        };
+
+        document.getElementById("remuneracionMinima").value = configuracion.remuneracionMinima;
+        document.getElementById("remuneracionMaxima").value = configuracion.remuneracionMaxima;
+        document.getElementById("toleranciaMinima").value = configuracion.toleranciaMinima;
+        document.getElementById("toleranciaMaxima").value = configuracion.toleranciaMaxima;
+        document.getElementById("interesMinimo").value = configuracion.interesMinimo;
+        document.getElementById("interesMaximo").value = configuracion.interesMaximo;
+        document.getElementById("cantidadCuotasMinimas").value = configuracion.cantidadCuotasMinimas;
+        document.getElementById("cantidadCuotasMaximas").value = configuracion.cantidadCuotasMaximas;
+
+        function guardarConfiguracion() {
+            configuracion.remuneracionMinima = parseFloat(document.getElementById("remuneracionMinima").value);
+            configuracion.remuneracionMaxima = parseFloat(document.getElementById("remuneracionMaxima").value);
+            configuracion.toleranciaMinima = parseFloat(document.getElementById("toleranciaMinima").value);
+            configuracion.toleranciaMaxima = parseFloat(document.getElementById("toleranciaMaxima").value);
+            configuracion.interesMinimo = parseFloat(document.getElementById("interesMinimo").value);
+            configuracion.interesMaximo = parseFloat(document.getElementById("interesMaximo").value);
+            configuracion.cantidadCuotasMinimas = parseInt(document.getElementById("cantidadCuotasMinimas").value);
+            configuracion.cantidadCuotasMaximas = parseInt(document.getElementById("cantidadCuotasMaximas").value);
+            alert("Configuración guardada exitosamente.");
+        }
+
+        function calcularTolerancia(remuneracion) {
+            if (remuneracion <= configuracion.remuneracionMinima) return 0;
+            if (remuneracion >= configuracion.remuneracionMaxima) return configuracion.toleranciaMaxima;
+
+            return configuracion.toleranciaMinima + ((remuneracion - configuracion.remuneracionMinima) / 
+                (configuracion.remuneracionMaxima - configuracion.remuneracionMinima)) * 
+                (configuracion.toleranciaMaxima - configuracion.toleranciaMinima);
+        }
+
+        function calcularInteresAnual(remuneracion) {
+            if (remuneracion <= configuracion.remuneracionMinima) return configuracion.interesMaximo;
+            if (remuneracion >= configuracion.remuneracionMaxima) return configuracion.interesMinimo;
+
+            return configuracion.interesMinimo + ((configuracion.remuneracionMaxima - remuneracion) / 
+                (configuracion.remuneracionMaxima - configuracion.remuneracionMinima)) * 
+                (configuracion.interesMaximo - configuracion.interesMinimo);
+        }
+
+        function calcularPlanes() {
+            const remuneracion = parseFloat(document.getElementById("remuneracion").value) * 0.82;
+            const montoSolicitado = parseFloat(document.getElementById("montoSolicitado").value);
+            const scoringTotal = parseFloat(document.getElementById("scoringTotal").value);
+
+            const porcentajeRiesgoTolerable = calcularTolerancia(remuneracion) / 100;
+            const porcentajeDecisionScoring = scoringTotal / 10;
+
+            let capacidadCrediticia = remuneracion * porcentajeRiesgoTolerable;
+            if (capacidadCrediticia > configuracion.capitalMaximo) {
+                capacidadCrediticia = configuracion.capitalMaximo;
+            }
+
+            const cuotaMaximaScoring = capacidadCrediticia * porcentajeDecisionScoring;
+            const interesAnual = calcularInteresAnual(remuneracion);
+            const interesMensual = interesAnual / 12;
+
+            if (montoSolicitado > cuotaMaximaScoring) {
+                alert(`El monto solicitado excede el límite permitido. El monto máximo por scoring es de $${cuotaMaximaScoring.toFixed(2)}.`);
+                return;
+            }
+
+            const planes = [];
+            for (let nroCuotas = configuracion.cantidadCuotasMinimas; nroCuotas <= configuracion.cantidadCuotasMaximas; nroCuotas++) {
+                const capitalMensual = montoSolicitado / nroCuotas;
+                const montoCuotaConInteres = (capitalMensual * (nroCuotas * (interesMensual / 100))) + capitalMensual;
+                planes.push({ cantidadCuotas: nroCuotas, montoCuota: montoCuotaConInteres });
+            }
+
+            let resultadoHTML = `
+            <p>
+                <strong>Resumen:</strong> Interés Anual: ${interesAnual.toFixed(2)}% |
+                Riesgo Tolerable: ${(porcentajeRiesgoTolerable * 100).toFixed(2)}% |
+                Remuneración Neta: $${remuneracion.toFixed(2)}
+            </p>`;
+            resultadoHTML += "<ul>";
+            planes.forEach(plan => {
+                resultadoHTML += `<li>${plan.cantidadCuotas} cuotas de $${plan.montoCuota.toFixed(2)}</li>`;
+            });
+            resultadoHTML += "</ul>";
+
+            document.getElementById("planesResultado").innerHTML = resultadoHTML;
+        }
+    </script>
+</body>
+</html>
